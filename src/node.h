@@ -125,7 +125,8 @@ public:
     VariableList arguments;
     NBlock& block;
     NFunctionDeclaration(const NIdentifier& type, const NIdentifier& id, 
-            const VariableList& arguments, NBlock& block) :
-        type(type), id(id), arguments(arguments), block(block) { }
+                         const VariableList& arguments, NBlock& block) :
+                         type(type), id(id), arguments(arguments), block(block)
+    { }
     virtual llvm::Value* codeGen(CodeGenContext& context);
 };

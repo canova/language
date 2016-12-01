@@ -1,31 +1,31 @@
 %{
-  #include "node.h"
-  #include <cstdio>
-  #include <cstdlib>
-  NBlock *programBlock; /* the top level root node of our final AST */
-  extern int yylex();
-  void yyerror(const char *s) { std::printf("Error: %s\n", s);std::exit(1); }
+    #include "node.h"
+    #include <cstdio>
+    #include <cstdlib>
+    NBlock *programBlock; /* the top level root node of our final AST */
+    extern int yylex();
+    void yyerror(const char *s) { std::printf("Error: %s\n", s);std::exit(1); }
 %}
 
 /* Represents the many different ways we can access our data */
 %union {
-  Node *node;
-  NBlock *block;
-  NExpression *expr;
-  NStatement *stmt;
-  NIdentifier *ident;
-  NVariableDeclaration *var_decl;
-  std::vector<NVariableDeclaration*> *varvec;
-  std::vector<NExpression*> *exprvec;
-  std::string *string;
-  int token;
+    Node *node;
+    NBlock *block;
+    NExpression *expr;
+    NStatement *stmt;
+    NIdentifier *ident;
+    NVariableDeclaration *var_decl;
+    std::vector<NVariableDeclaration*> *varvec;
+    std::vector<NExpression*> *exprvec;
+    std::string *string;
+    int token;
 }
 
 /* Define our terminal symbols (tokens). This should
    match our tokens.l lex file. We also define the node type
    they represent.
  */
-%token <string> TIDENTIFIER TINTEGER TDOUBLE
+%token <string> TIDENTIFIER TINTEGER TDOUBLE TSTRING
 %token <token> TCEQ TCNE TCLT TCLE TCGT TCGE TEQUAL
 %token <token> TLPAREN TRPAREN TLBRACE TRBRACE TCOMMA TDOT
 %token <token> TPLUS TMINUS TMUL TDIV
@@ -93,16 +93,16 @@ numeric : TINTEGER { $$ = new NInteger(atol($1->c_str())); delete $1; }
     ;
   
 expr : ident TEQUAL expr { $$ = new NAssignment(*$<ident>1, *$3); }
-   | ident TLPAREN call_args TRPAREN { $$ = new NMethodCall(*$1, *$3); delete $3; }
-   | ident { $<ident>$ = $1; }
-   | numeric
-     | expr TMUL expr { $$ = new NBinaryOperator(*$1, $2, *$3); }
-     | expr TDIV expr { $$ = new NBinaryOperator(*$1, $2, *$3); }
-     | expr TPLUS expr { $$ = new NBinaryOperator(*$1, $2, *$3); }
-     | expr TMINUS expr { $$ = new NBinaryOperator(*$1, $2, *$3); }
-     | expr comparison expr { $$ = new NBinaryOperator(*$1, $2, *$3); }
-     | TLPAREN expr TRPAREN { $$ = $2; }
-   ;
+     | ident TLPAREN call_args TRPAREN { $$ = new NMethodCall(*$1, *$3); delete $3; }
+     | ident { $<ident>$ = $1; }
+     | numeric
+       | expr TMUL expr { $$ = new NBinaryOperator(*$1, $2, *$3); }
+       | expr TDIV expr { $$ = new NBinaryOperator(*$1, $2, *$3); }
+       | expr TPLUS expr { $$ = new NBinaryOperator(*$1, $2, *$3); }
+       | expr TMINUS expr { $$ = new NBinaryOperator(*$1, $2, *$3); }
+       | expr comparison expr { $$ = new NBinaryOperator(*$1, $2, *$3); }
+       | TLPAREN expr TRPAREN { $$ = $2; }
+       ;
   
 call_args : /*blank*/  { $$ = new ExpressionList(); }
       | expr { $$ = new ExpressionList(); $$->push_back($1); }

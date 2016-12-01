@@ -37,17 +37,17 @@ void createEchoFunction(CodeGenContext& context, llvm::Function* printfFn)
 
     llvm::Function *func = llvm::Function::Create(
                 echo_type, llvm::Function::InternalLinkage,
-                llvm::Twine("echo"),
+                llvm::Twine(""),
                 context.module
            );
     llvm::BasicBlock *bblock = llvm::BasicBlock::Create(TheContext, "entry", func, 0);
-	context.pushBlock(bblock);
+    context.pushBlock(bblock);
     
     const char *constValue = "%d\n";
     llvm::Constant *format_const = llvm::ConstantDataArray::getString(TheContext, constValue);
     llvm::GlobalVariable *var =
         new llvm::GlobalVariable(
-            *context.module, llvm::ArrayType::get(llvm::IntegerType::get(TheContext, 8), strlen(constValue)+1),
+            *context.module, llvm::ArrayType::get(llvm::IntegerType::get(TheContext, 8), strlen(constValue) + 1),
             true, llvm::GlobalValue::PrivateLinkage, format_const, ".str");
     llvm::Constant *zero =
         llvm::Constant::getNullValue(llvm::IntegerType::getInt32Ty(TheContext));
@@ -56,7 +56,7 @@ void createEchoFunction(CodeGenContext& context, llvm::Function* printfFn)
     indices.push_back(zero);
     indices.push_back(zero);
     llvm::Constant *var_ref = llvm::ConstantExpr::getGetElementPtr(
-	llvm::ArrayType::get(llvm::IntegerType::get(TheContext, 8), strlen(constValue+1)),
+    llvm::ArrayType::get(llvm::IntegerType::get(TheContext, 8), strlen(constValue) + 1),
         var, indices);
 
     std::vector<Value*> args;
@@ -67,12 +67,12 @@ void createEchoFunction(CodeGenContext& context, llvm::Function* printfFn)
     toPrint->setName("toPrint");
     args.push_back(toPrint);
     
-	CallInst *call = CallInst::Create(printfFn, makeArrayRef(args), "", bblock);
-	ReturnInst::Create(TheContext, bblock);
-	context.popBlock();
+    CallInst *call = CallInst::Create(printfFn, makeArrayRef(args), "", bblock);
+    ReturnInst::Create(TheContext, bblock);
+    context.popBlock();
 }
 
 void createCoreFunctions(CodeGenContext& context){
-	llvm::Function* printfFn = createPrintfFunction(context);
+    llvm::Function* printfFn = createPrintfFunction(context);
     createEchoFunction(context, printfFn);
 }

@@ -1,17 +1,20 @@
+GREEN=\033[0;32m
+NC=\033[0m #No color
+
 clean:
-	$(RM) -rf parser
 	cd src; make clean
+	@echo "${GREEN}Clenup Complete!${NC}"
 
 .PHONY: compiler
 compile:
 	cd src/; make parser
-	@echo "COMPILATION SUCCESSFUL!"
+	@echo "${GREEN}Compilation Successful!${NC}"
 
 .PHONY: compiler
 parser:
 	cd src/; make parser.cpp
-	@echo "Parser Generated!"
+	@echo "${GREEN}Parser Generated!${NC}"
 
 .PHONY: test
-test:
-	cat example.txt | ./src/parser
+test: compile
+	cat example.txt | ./compiler
