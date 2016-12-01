@@ -100,7 +100,7 @@ expr : ident TEQUAL expr { $$ = new NAssignment(*$<ident>1, *$3); }
      | expr TDIV expr { $$ = new NBinaryOperator(*$1, $2, *$3); }
      | expr TPLUS expr { $$ = new NBinaryOperator(*$1, $2, *$3); }
      | expr TMINUS expr { $$ = new NBinaryOperator(*$1, $2, *$3); }
-   | expr comparison expr { $$ = new NBinaryOperator(*$1, $2, *$3); }
+     | expr comparison expr { $$ = new NBinaryOperator(*$1, $2, *$3); }
      | TLPAREN expr TRPAREN { $$ = $2; }
    ;
   
