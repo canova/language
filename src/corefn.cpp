@@ -37,7 +37,7 @@ void createEchoFunction(CodeGenContext& context, llvm::Function* printfFn)
 
     llvm::Function *func = llvm::Function::Create(
                 echo_type, llvm::Function::InternalLinkage,
-                llvm::Twine(""),
+                llvm::Twine("yaz"),
                 context.module
            );
     llvm::BasicBlock *bblock = llvm::BasicBlock::Create(TheContext, "entry", func, 0);

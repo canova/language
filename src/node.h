@@ -114,7 +114,7 @@ public:
     const NIdentifier& id;
     VariableList arguments;
     NExternDeclaration(const NIdentifier& type, const NIdentifier& id, const VariableList& arguments) :
-        type(type), id(id), arguments(arguments) {}
+        type(type), id(id), arguments(arguments) { }
     virtual llvm::Value* codeGen(CodeGenContext& context);
 };
 
