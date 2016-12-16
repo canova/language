@@ -30,6 +30,9 @@
 %token <token> TLPAREN TRPAREN TLBRACE TRBRACE TCOMMA TDOT
 %token <token> TPLUS TMINUS TMUL TDIV
 %token <token> TRETURN TEXTERN
+%token <token> TBREAK TCASE TCONST TCONTINUE TDEFAULT TDO TELSE TENUM
+%token <token> TFOR TIF TSWITCH TVOID TWHILE TFOREACH TNOT TLOOP TIN
+%token <token> TTRUE TFALSE
 
 /* Define the type of node our nonterminal symbols represent.
    The types refer to the %union declaration above. Ex: when

@@ -12,8 +12,27 @@
 %%
 
 [ \t\n]                         ;
-"extern"                        return TOKEN(TEXTERN);
-"return"                        return TOKEN(TRETURN);
+"çık"                           return TOKEN(TBREAK);
+"durum"                         return TOKEN(TCASE);
+"sabit"                         return TOKEN(TCONST);
+"atla"                          return TOKEN(TCONTINUE);
+"kabul"                         return TOKEN(TDEFAULT);
+"yap"                           return TOKEN(TDO);
+"yoksa"                         return TOKEN(TELSE);
+"seçimli"                       return TOKEN(TENUM);
+"çevrim"                        return TOKEN(TFOR);
+"eğer"                          return TOKEN(TIF);
+"döndür"                        return TOKEN(TRETURN);
+"şartlıgir"                     return TOKEN(TSWITCH);
+"yok"                           return TOKEN(TVOID);
+"sürece"                        return TOKEN(TWHILE);
+"herbir"                        return TOKEN(TFOREACH);
+"değil"                         return TOKEN(TNOT);
+"döngü"                         return TOKEN(TLOOP);
+"içindeki"                      return TOKEN(TIN);
+"dış"                           return TOKEN(TEXTERN);
+"doğru"                         return TOKEN(TTRUE);
+"yanlış"                        return TOKEN(TFALSE);
 [a-zA-Z_][a-zA-Z0-9_]*          SAVE_TOKEN; return TIDENTIFIER;
 [0-9]+\.[0-9]*                  SAVE_TOKEN; return TDOUBLE;
 [0-9]+                          SAVE_TOKEN; return TINTEGER;

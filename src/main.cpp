@@ -1,4 +1,5 @@
 #include <iostream>
+#include <locale.h>
 #include "codegen.h"
 #include "node.h"
 
@@ -11,6 +12,7 @@ void createCoreFunctions(CodeGenContext& context);
 
 int main(int argc, char **argv)
 {
+    setlocale(LC_ALL, "Turkish");
     yyparse();
     cout << programBlock << endl;
 

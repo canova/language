@@ -7,6 +7,7 @@
 # Generated files
 parser.cpp
 parser.hpp
+parser.output
 tokens.cpp
 compiler
 example.txt
