@@ -42,7 +42,7 @@ void createEchoFunction(CodeGenContext& context, llvm::Function* printfFn)
            );
     llvm::BasicBlock *bblock = llvm::BasicBlock::Create(TheContext, "entry", func, 0);
     context.pushBlock(bblock);
-    
+
     const char *constValue = "%d\n";
     llvm::Constant *format_const = llvm::ConstantDataArray::getString(TheContext, constValue);
     llvm::GlobalVariable *var =
@@ -66,7 +66,7 @@ void createEchoFunction(CodeGenContext& context, llvm::Function* printfFn)
     Value* toPrint = &*argsValues++;
     toPrint->setName("toPrint");
     args.push_back(toPrint);
-    
+
     CallInst *call = CallInst::Create(printfFn, makeArrayRef(args), "", bblock);
     ReturnInst::Create(TheContext, bblock);
     context.popBlock();

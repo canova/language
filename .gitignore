@@ -10,7 +10,7 @@ parser.hpp
 parser.output
 tokens.cpp
 compiler
-example.txt
+example.program
 
 # Executables
 *.exe

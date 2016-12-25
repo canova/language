@@ -6,10 +6,11 @@ OBJS = parser.o  \
        tokens.o  \
        corefn.o  \
        native.o  \
+       slot.o    \
 
 LLVMCONFIG = llvm-config
-CPPFLAGS = `$(LLVMCONFIG) --cppflags` -std=c++11
-LDFLAGS = `$(LLVMCONFIG) --ldflags` -lpthread -ldl -lz -lncurses -rdynamic
+CPPFLAGS = `$(LLVMCONFIG) --cppflags` -std=c++11 -fblocks
+LDFLAGS = `$(LLVMCONFIG) --ldflags` -lpthread -ldl -lz -lncurses -rdynamic -lBlocksRuntime
 LIBS = `$(LLVMCONFIG) --libs`
 
 clean:
@@ -17,15 +18,14 @@ clean:
 
 parser.cpp: parser.y
 	bison -d -o $@ $^ -v
-	
+
 parser.hpp: parser.cpp
 
 tokens.cpp: tokens.l parser.hpp
 	flex -o $@ $^
 
 %.o: %.cpp
-	g++ -c $(CPPFLAGS) -o $@ $<
-
+	clang++ -c $(CPPFLAGS) -o $@ $<
 
 parser: $(OBJS)
-	g++ -o ../compiler $(OBJS) $(LIBS) $(LDFLAGS)
+	clang++ -o ../compiler $(OBJS) $(LIBS) $(LDFLAGS)

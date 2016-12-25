@@ -16,6 +16,8 @@
 #include <llvm/ExecutionEngine/MCJIT.h>
 #include <llvm/ExecutionEngine/GenericValue.h>
 #include <llvm/Support/raw_ostream.h>
+#include <llvm/IR/DebugInfoMetadata.h>
+
 
 using namespace llvm;
 
@@ -35,17 +37,27 @@ class CodeGenContext {
     Function *mainFunction;
 
 public:
+    Value *cObject;
     Module *module;
+    Function *objallocFunction;
+    Function *putSlotFunction;
+    Function *getSlotFunction;
+    Function *newobjFunction;
     CodeGenContext() {
         module = new Module("main", TheContext);
     }
-    
+
+    StructType* addStructType(char *name, size_t numArgs, ...);
+    FunctionType* functionType(Type* retType, bool varargs, size_t numArgs, ...);
+    Function* addExternalFunction(char *name, FunctionType *ftype);
+    Function *addFunction(char *name, FunctionType *ftype, void (^block)(BasicBlock *));
+
     void generateCode(NBlock& root);
     GenericValue runCode();
     std::map<std::string, Value*>& locals() {
         return blocks.top()->locals;
     }
-    
+
     BasicBlock *currentBlock() {
         return blocks.top()->block;
     }
