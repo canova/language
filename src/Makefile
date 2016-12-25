@@ -14,7 +14,7 @@ LDFLAGS = `$(LLVMCONFIG) --ldflags` -lpthread -ldl -lz -lncurses -rdynamic -lBlo
 LIBS = `$(LLVMCONFIG) --libs`
 
 clean:
-	$(RM) -rf parser.cpp parser.hpp tokens.cpp ../compiler $(OBJS)
+	$(RM) -rf parser.cpp parser.hpp tokens.cpp ../compiler parser.output $(OBJS)
 
 parser.cpp: parser.y
 	bison -d -o $@ $^ -v

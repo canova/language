@@ -13,6 +13,14 @@ typedef std::vector<NExpression*> ExpressionList;
 typedef std::vector<NIdentifier*> IdentifierList;
 typedef std::vector<NVariableDeclaration*> VariableList;
 
+enum VariableType {
+    Bool,
+    Integer,
+    Double,
+    String,
+    Object
+};
+
 class Node {
 public:
     virtual ~Node() {}
@@ -115,33 +123,33 @@ public:
 
 class NVariableDeclaration : public NStatement {
 public:
-    const NIdentifier& type;
+    const VariableType type;
     NIdentifier& id;
     NExpression *assignmentExpr;
-    NVariableDeclaration(const NIdentifier& type, NIdentifier& id) :
+    NVariableDeclaration(const VariableType type, NIdentifier& id) :
         type(type), id(id) { assignmentExpr = NULL; }
-    NVariableDeclaration(const NIdentifier& type, NIdentifier& id, NExpression *assignmentExpr) :
+    NVariableDeclaration(const VariableType type, NIdentifier& id, NExpression *assignmentExpr) :
         type(type), id(id), assignmentExpr(assignmentExpr) { }
     virtual llvm::Value* codeGen(CodeGenContext& context);
 };
 
 class NExternDeclaration : public NStatement {
 public:
-    const NIdentifier& type;
+    const VariableType& type;
     const NIdentifier& id;
     VariableList arguments;
-    NExternDeclaration(const NIdentifier& type, const NIdentifier& id, const VariableList& arguments) :
+    NExternDeclaration(const VariableType& type, const NIdentifier& id, const VariableList& arguments) :
         type(type), id(id), arguments(arguments) { }
     virtual llvm::Value* codeGen(CodeGenContext& context);
 };
 
 class NFunctionDeclaration : public NStatement {
 public:
-    const NIdentifier& type;
+    const VariableType type;
     const NIdentifier& id;
     VariableList arguments;
     NBlock& block;
-    NFunctionDeclaration(const NIdentifier& type, const NIdentifier& id,
+    NFunctionDeclaration(const VariableType type, const NIdentifier& id,
                          const VariableList& arguments, NBlock& block) :
                          type(type), id(id), arguments(arguments), block(block)
     { }

@@ -20,6 +20,7 @@
     NReference *ref;
     std::string *string;
     int token;
+    VariableType vartype;
 }
 
 /* Define our terminal symbols (tokens). This should
@@ -34,6 +35,7 @@
 %token <token> TBREAK TCASE TCONST TCONTINUE TDEFAULT TDO TELSE TENUM
 %token <token> TFOR TIF TSWITCH TVOID TWHILE TFOREACH TNOT TLOOP TIN
 %token <token> TTRUE TFALSE
+%token <token>  TINTEGERKEY TDOUBLEKEY TSTRINGKEY TOBJECTKEY
 
 /* Define the type of node our nonterminal symbols represent.
    The types refer to the %union declaration above. Ex: when
@@ -48,6 +50,7 @@
 %type <block> program stmts block
 %type <stmt> stmt var_decl func_decl extern_decl
 %type <token> comparison
+%type <vartype> var_type
 
 /* Operator precedence for mathematical operators */
 %left TPLUS TMINUS
@@ -73,16 +76,22 @@ block : TLBRACE stmts TRBRACE { $$ = $2; }
     | TLBRACE TRBRACE { $$ = new NBlock(); }
     ;
 
-var_decl : ident ident { $$ = new NVariableDeclaration(*$1, *$2); }
-     | ident ident TEQUAL expr { $$ = new NVariableDeclaration(*$1, *$2, $4); }
-     ;
+var_decl : var_type ident { $$ = new NVariableDeclaration($1, *$2); }
+         | var_type ident TEQUAL expr { $$ = new NVariableDeclaration($1, *$2, $4); }
+         ;
 
-extern_decl : TEXTERN ident ident TLPAREN func_decl_args TRPAREN
-                { $$ = new NExternDeclaration(*$2, *$3, *$5); delete $5; }
+extern_decl : TEXTERN var_type ident TLPAREN func_decl_args TRPAREN
+                { $$ = new NExternDeclaration($2, *$3, *$5); delete $5; }
             ;
 
-func_decl : ident ident TLPAREN func_decl_args TRPAREN block
-      { $$ = new NFunctionDeclaration(*$1, *$2, *$4, *$6); delete $4; }
+var_type : TINTEGERKEY { $$ = VariableType::Integer; }
+         | TDOUBLEKEY { $$ = VariableType::Double; }
+         | TSTRINGKEY { $$ = VariableType::String; }
+         | TOBJECTKEY { $$ = VariableType::Object; }
+         ;
+
+func_decl : var_type ident TLPAREN func_decl_args TRPAREN block
+      { $$ = new NFunctionDeclaration($1, *$2, *$4, *$6); delete $4; }
       ;
 
 func_decl_args : /*blank*/  { $$ = new VariableList(); }
@@ -95,10 +104,6 @@ ref : ident { $$ = new NReference(); $$->refs.push_back($1); }
 
 ident : TIDENTIFIER { $$ = new NIdentifier(*$1); delete $1; }
       ;
-
-numeric : TINTEGER { $$ = new NInteger(atol($1->c_str())); delete $1; }
-    | TDOUBLE { $$ = new NDouble(atof($1->c_str())); delete $1; }
-    ;
 
 expr : ref TEQUAL expr { $$ = new NAssignment(*$1, *$3); }
      | ref TLPAREN call_args TRPAREN { $$ = new NMethodCall(*$1, *$3); delete $3; }
@@ -113,6 +118,10 @@ expr : ref TEQUAL expr { $$ = new NAssignment(*$1, *$3); }
      | TLPAREN expr TRPAREN { $$ = $2; }
      | block
      ;
+
+numeric : TINTEGER { $$ = new NInteger(atol($1->c_str())); delete $1; }
+        | TDOUBLE { $$ = new NDouble(atof($1->c_str())); delete $1; }
+        ;
 
 call_args : /*blank*/  { $$ = new ExpressionList(); }
       | expr { $$ = new ExpressionList(); $$->push_back($1); }
