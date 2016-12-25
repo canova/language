@@ -1,10 +1,19 @@
+/* Request detailed parse error messages. */
+%error-verbose
+%locations
+%define api.pure full
+
 %{
     #include "node.h"
     #include <cstdio>
     #include <cstdlib>
+    #define ANSI_COLOR_RED     "\x1b[31m"
+    #define ANSI_COLOR_YELLOW  "\x1b[33m"
+    #define ANSI_COLOR_RESET   "\x1b[0m"
+
     NBlock *programBlock; /* the top level root node of our final AST */
-    extern int yylex();
-    void yyerror(const char *s) { std::printf("Error: %s\n", s);std::exit(1); }
+    extern int yylex(union YYSTYPE*, struct YYLTYPE*);
+    void yyerror (struct  YYLTYPE *llocp, const char *s);
 %}
 
 /* Represents the many different ways we can access our data */
@@ -88,6 +97,7 @@ var_type : TINTEGERKEY { $$ = VariableType::Integer; }
          | TDOUBLEKEY { $$ = VariableType::Double; }
          | TSTRINGKEY { $$ = VariableType::String; }
          | TOBJECTKEY { $$ = VariableType::Object; }
+         | TVOID { $$ = VariableType::Void; }
          ;
 
 func_decl : var_type ident TLPAREN func_decl_args TRPAREN block
@@ -131,3 +141,12 @@ call_args : /*blank*/  { $$ = new ExpressionList(); }
 comparison : TCEQ | TCNE | TCLT | TCLE | TCGT | TCGE;
 
 %%
+
+void yyerror(YYLTYPE *llocp, const char *s)
+{
+    std::printf("Satır: " ANSI_COLOR_YELLOW "%d" ANSI_COLOR_RESET " Sütun: " \
+                ANSI_COLOR_YELLOW "%d" ANSI_COLOR_RESET ":" ANSI_COLOR_RED \
+                " Sözdizimi hatası:" ANSI_COLOR_RESET " %s\n",
+                llocp->first_line, llocp->first_column, s);
+    std::exit(1);
+}

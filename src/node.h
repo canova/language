@@ -18,7 +18,8 @@ enum VariableType {
     Integer,
     Double,
     String,
-    Object
+    Object,
+    Void
 };
 
 class Node {

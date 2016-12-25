@@ -3,16 +3,25 @@
 #include "node.h"
 #include "parser.hpp"
 
-#define SAVE_TOKEN  yylval.string = new std::string(yytext, yyleng)
-#define SAVE_STRING yylval.string = new std::string(yytext + 1, yyleng - 2)
-#define TOKEN(t)    (yylval.token = t)
+#define SAVE_TOKEN  yylval->string = new std::string(yytext, yyleng)
+#define SAVE_STRING yylval->string = new std::string(yytext + 1, yyleng - 2)
+#define TOKEN(t)    (yylval->token = t)
+
+#define YY_USER_ACTION yylloc->first_line = yylloc->last_line = yylineno; \
+    yylloc->first_column = yycolumn; \
+    yycolumn += yyleng;
+
+int yycolumn = 1;
+
 %}
 
+%option bison-locations
+%option yylineno
 %option noyywrap
 
 %%
 
-[ \t\n]                         ;
+[ \t]                           ;
 "çık"                           return TOKEN(TBREAK);
 "durum"                         return TOKEN(TCASE);
 "sabit"                         return TOKEN(TCONST);
@@ -25,7 +34,6 @@
 "eğer"                          return TOKEN(TIF);
 "döndür"                        return TOKEN(TRETURN);
 "şartlıgir"                     return TOKEN(TSWITCH);
-"yok"                           return TOKEN(TVOID);
 "sürece"                        return TOKEN(TWHILE);
 "herbir"                        return TOKEN(TFOREACH);
 "değil"                         return TOKEN(TNOT);
@@ -34,6 +42,7 @@
 "dış"                           return TOKEN(TEXTERN);
 "doğru"                         return TOKEN(TTRUE);
 "yanlış"                        return TOKEN(TFALSE);
+"yok"                           return TOKEN(TVOID);
 "sayı"                          return TOKEN(TINTEGERKEY);
 "ondalıklı"                     return TOKEN(TDOUBLEKEY);
 "string"                        return TOKEN(TSTRINGKEY);
@@ -64,6 +73,12 @@
 "*"                             return TOKEN(TMUL);
 "/"                             return TOKEN(TDIV);
 
-.                               printf("Unknown token!\n"); yyterminate();
+"//".*                          { /* Do nothing, single line comment */ }
+"\n"                             yycolumn = 1;
+
+[/][*][^*]*[*]+([^*/][^*]*[*]+)*[/] { /* Do nothing, multi line comment */ }
+[/][*]                              printf("Unterminated comment!\n"); yyterminate();
+
+.                                   printf("Unknown token!\n"); yyterminate();
 
 %%

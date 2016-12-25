@@ -18,7 +18,6 @@
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/IR/DebugInfoMetadata.h>
 
-
 using namespace llvm;
 
 static LLVMContext TheContext;
