@@ -8,7 +8,7 @@
 parser.cpp
 parser.hpp
 parser.output
-tokens.cpp
+lexer.cpp
 compiler
 example.program
 

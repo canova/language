@@ -14,7 +14,7 @@ int main(int argc, char **argv)
 {
     setlocale(LC_ALL, "Turkish");
     yyparse();
-    cout << programBlock << endl;
+    //cout << programBlock << endl;
 
     // http://comments.gmane.org/gmane.comp.compilers.llvm.devel/33877
     InitializeNativeTarget();

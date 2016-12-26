@@ -33,7 +33,7 @@
 }
 
 /* Define our terminal symbols (tokens). This should
-   match our tokens.l lex file. We also define the node type
+   match our lexer.l lex file. We also define the node type
    they represent.
  */
 %token <string> TIDENTIFIER TINTEGER TDOUBLE TSTRING

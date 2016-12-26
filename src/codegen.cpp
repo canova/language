@@ -108,7 +108,7 @@ void CodeGenContext::generateCode(NBlock& root)
        Comment these lines after debugging.
      */
     //cout << "Code is generated.\n";
-    //module->dump();
+    module->dump();
     //cout << "Dump ends.\n";
 }
 
@@ -121,7 +121,7 @@ GenericValue CodeGenContext::runCode() {
     ee->finalizeObject();
     vector<GenericValue> noargs;
     GenericValue v = ee->runFunction(mainFunction, noargs);
-    //cout << "Code was run.\n";
+    cout << "\033[0;32mCode was run.\x1b[0m\n";
 
     if (error.length() > 0)
         cerr << "Error exist: " << error << endl;
@@ -147,6 +147,7 @@ static Type *typeOf(const VariableType type)
 
 static Value* getStringConstant(const string& str, CodeGenContext& context)
 {
+    //cout << "getStringConstant str: " << str;
     Constant *n = ConstantDataArray::getString(TheContext, str.c_str(), true);
     GlobalVariable *g = new GlobalVariable(*context.module, n->getType(), true,
         GlobalValue::InternalLinkage, 0, str.c_str());
@@ -213,20 +214,26 @@ Value* NIdentifier::codeGen(CodeGenContext& context)
 Value* NString::codeGen(CodeGenContext& context)
 {
     //cout << "Creating string: " << value << endl;
-    vector<Value*> args;
-    args.push_back(ConstantPointerNull::get(ObjectType_p));
-    return CallInst::Create(context.newobjFunction, makeArrayRef(args), "");
+    Constant *format_const = ConstantDataArray::getString(TheContext, value);
+    GlobalVariable *var =
+        new GlobalVariable(
+            *context.module, ArrayType::get(IntegerType::get(TheContext, 8), value.length() + 1),
+            true, GlobalValue::PrivateLinkage, format_const, ".str");
+    // Old NString codegen
+    //args.push_back(ConstantPointerNull::get(ObjectType_p));
+    //return CallInst::Create(context.newobjFunction, makeArrayRef(args), "");
+    return var;
 }
 
 Value* NReference::codeGen(CodeGenContext& context)
 {
     if (refs.size() == 1) {
         NIdentifier *ident = refs.front();
-        //cout << "Creating reference: " << ident->name << endl;
+        //cout << "ı Creating reference: " << ident->name << endl;
         return ident->codeGen(context);
     }
 
-    //cout << "Creating reference" << endl;
+    //cout << "2 Creating reference" << endl;
     return resolveReference(*this, context);
 }
 
@@ -270,8 +277,10 @@ Value* NAssignment::codeGen(CodeGenContext& context)
 {
     //cout << "Creating assignment " << endl;
     if (lhs.refs.size() == 1) {
+        //cout << "IF" << endl;
         return new StoreInst(rhs.codeGen(context), context.locals()[lhs.refs.front()->name], false, context.currentBlock());
     } else {
+        //cout << "ELSE" << endl;
         Value *value = resolveReference(lhs, context, true);
         Value *sym = getStringConstant(lhs.refs.back()->name, context);
 

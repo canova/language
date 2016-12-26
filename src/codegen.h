@@ -45,6 +45,7 @@ public:
     Function *putSlotFunction;
     Function *getSlotFunction;
     Function *newobjFunction;
+
     CodeGenContext() {
         module = new Module("main", TheContext);
     }

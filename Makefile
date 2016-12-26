@@ -3,7 +3,7 @@ NC=\033[0m #No color
 
 clean:
 	cd src; make clean
-	@echo "${GREEN}Clenup Complete!${NC}"
+	@echo "${GREEN}Cleanup Complete!${NC}"
 
 .PHONY: parser
 parser:

@@ -3,7 +3,7 @@ all: parser
 OBJS = parser.o  \
        codegen.o \
        main.o    \
-       tokens.o  \
+       lexer.o   \
        corefn.o  \
        native.o  \
        slot.o    \
@@ -14,14 +14,14 @@ LDFLAGS = `$(LLVMCONFIG) --ldflags` -lpthread -ldl -lz -lncurses -rdynamic -lBlo
 LIBS = `$(LLVMCONFIG) --libs`
 
 clean:
-	$(RM) -rf parser.cpp parser.hpp tokens.cpp ../compiler parser.output $(OBJS)
+	$(RM) -rf parser.cpp parser.hpp lexer.cpp ../compiler parser.output $(OBJS)
 
 parser.cpp: parser.y
 	bison -d -o $@ $^ -v
 
 parser.hpp: parser.cpp
 
-tokens.cpp: tokens.l parser.hpp
+lexer.cpp: lexer.l parser.hpp
 	flex -o $@ $^
 
 %.o: %.cpp
