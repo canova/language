@@ -1,3 +1,6 @@
+#ifndef types_h
+#define types_h
+
 #include <map>
 
 #ifdef __cplusplus
@@ -34,3 +37,5 @@ struct cdouble {
 #ifdef __cplusplus
 }
 #endif
+
+#endif // types_h

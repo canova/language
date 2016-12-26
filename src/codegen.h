@@ -1,3 +1,6 @@
+#ifndef codegen_h
+#define codegen_h
+
 #include <stack>
 #include <typeinfo>
 #include <llvm/IR/Module.h>
@@ -81,3 +84,5 @@ public:
         return blocks.top()->returnValue;
     }
 };
+
+#endif // codegen_h
