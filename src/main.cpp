@@ -1,7 +1,7 @@
 #include <iostream>
 #include <locale.h>
-#include "codegen.h"
-#include "node.h"
+#include "core/codegen.h"
+#include "core/node.h"
 
 using namespace std;
 

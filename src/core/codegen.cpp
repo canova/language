@@ -1,6 +1,6 @@
 #include "node.h"
 #include "codegen.h"
-#include "parser.hpp"
+#include "../grammar/parser.hpp"
 #include "types.h"
 #include <stdarg.h>
 #include <string>

@@ -4,7 +4,7 @@
 %define api.pure full
 
 %{
-    #include "node.h"
+    #include "../core/node.h"
     #include <cstdio>
     #include <cstdlib>
     #define ANSI_COLOR_RED     "\x1b[31m"
