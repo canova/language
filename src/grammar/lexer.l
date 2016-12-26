@@ -77,8 +77,8 @@ int yycolumn = 1;
 "\n"                             yycolumn = 1;
 
 [/][*][^*]*[*]+([^*/][^*]*[*]+)*[/] { /* Do nothing, multi line comment */ }
-[/][*]                              printf("Unterminated comment!\n"); yyterminate();
+[/][*]                              printf("Sonlandırılmamış Yorum!\n"); yyterminate();
 
-.                                   printf("Unknown token!\n"); yyterminate();
+.                                   printf("Bilinmeyen Simge!\n"); yyterminate();
 
 %%
