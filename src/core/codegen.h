@@ -20,6 +20,7 @@
 #include <llvm/ExecutionEngine/GenericValue.h>
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/IR/DebugInfoMetadata.h>
+#include "../logger.h"
 
 using namespace llvm;
 

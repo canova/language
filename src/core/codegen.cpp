@@ -18,6 +18,7 @@ mObject (*objalloc)() = NULL;
 
 StructType* CodeGenContext::addStructType(char *name, size_t numArgs, ...)
 {
+    LOG(LogLevel::Verbose, "addStructType");
     vector<Type *> fields;
     StructType *fwdType = StructType::create(TheContext, name);
     fields.push_back(PointerType::getUnqual(fwdType));
@@ -65,7 +66,7 @@ Function* CodeGenContext::addFunction(char *name, FunctionType *fType, void (^bl
 /* Compile the AST into a module */
 void CodeGenContext::generateCode(NBlock& root)
 {
-    cout << "Generating code...\n";
+    LOG(LogLevel::Debug, "Generating code...");
 
     ObjectType = addStructType((char *) "mObject", 1, GenericPointerType);
     ObjectType_p = PointerType::getUnqual(ObjectType);
@@ -107,24 +108,24 @@ void CodeGenContext::generateCode(NBlock& root)
        to see if our program compiled properly
        Comment these lines after debugging.
      */
-    //cout << "Code is generated.\n";
-    module->dump();
-    //cout << "Dump ends.\n";
+    LOG(LogLevel::Debug, "Code is generated.");
+    //module->dump();
+    LOG(LogLevel::Verbose, "Dump ends.");
 }
 
 /* Executes the AST by running the main function */
 GenericValue CodeGenContext::runCode() {
-    //cout << "Running code...\n";
+    LOG(LogLevel::Debug, "Running code...");
     string error;
     ExecutionEngine *ee = EngineBuilder(unique_ptr<Module>(module)).setErrorStr(&error).create();
     objalloc = (mObject (*)())ee->getPointerToFunction(objallocFunction);
     ee->finalizeObject();
     vector<GenericValue> noargs;
     GenericValue v = ee->runFunction(mainFunction, noargs);
-    cout << "\033[0;32mCode was run.\x1b[0m\n";
+    LOG(LogLevel::Info, "\033[0;32mCode was run.\x1b[0m");
 
     if (error.length() > 0)
-        cerr << "Error exist: " << error << endl;
+        LOG(LogLevel::Error, "Error exist: " + error);
 
     return v;
 }
@@ -147,7 +148,7 @@ static Type *typeOf(const VariableType type)
 
 static Value* getStringConstant(const string& str, CodeGenContext& context)
 {
-    //cout << "getStringConstant str: " << str;
+    LOG(LogLevel::Verbose, "getStringConstant str: " + str);
     Constant *n = ConstantDataArray::getString(TheContext, str.c_str(), true);
     GlobalVariable *g = new GlobalVariable(*context.module, n->getType(), true,
         GlobalValue::InternalLinkage, 0, str.c_str());
@@ -166,14 +167,14 @@ static Value* resolveReference(NReference& ref, CodeGenContext& context, bool ig
         NIdentifier& ident = **it;
         if (ignoreLast && it == ref.refs.end() - 1) return curValue;
 
-        //cout << "Next ident " << ident.name << endl;
+        LOG(LogLevel::Verbose, "Next ident: " + ident.name);
         Value *ch = getStringConstant(ident.name, context);
 
         vector<Value*> params;
         params.push_back(curValue);
         params.push_back(ch);
         params.push_back(ConstantInt::get(Type::getInt64Ty(TheContext), 1));
-        //cout << "About to call " << typeid(curValue).name() << " :: " << typeid(ch).name() << endl;
+        LOG(LogLevel::Verbose, "About to call " + string(typeid(curValue).name()) + "::" + typeid(ch).name());
         CallInst *call = CallInst::Create(context.getSlotFunction, makeArrayRef(params), "");
         call->setCallingConv(CallingConv::C);
         curValue = call;
@@ -185,35 +186,37 @@ static Value* resolveReference(NReference& ref, CodeGenContext& context, bool ig
 
 Value* NInteger::codeGen(CodeGenContext& context)
 {
-    //cout << "Creating integer: " << value << endl;
+    LOG(LogLevel::Verbose, "Creating integer: " + to_string(value));
     return ConstantInt::get(Type::getInt64Ty(TheContext), value, true);
 }
 
 Value* NDouble::codeGen(CodeGenContext& context)
 {
-    //cout << "Creating double: " << value << endl;
+    LOG(LogLevel::Verbose, "Creating double: " + to_string(value));
     return ConstantFP::get(Type::getDoubleTy(TheContext), value);
 }
 
 Value* NIdentifier::codeGen(CodeGenContext& context)
 {
-    //cout << "Creating identifier: " << name << endl;
+    LOG(LogLevel::Verbose, "Creating identifier: " + name);
     if (name.compare("null") == 0) {
         return ConstantPointerNull::get(ObjectType_p);
     }
+
     if (context.locals().find(name) == context.locals().end()) {
-        //cout << "Instantiating object " << name << endl;
+        LOG(LogLevel::Verbose, "Instantiating object: " + name);
         vector<Value*> args;
         args.push_back(ConstantPointerNull::get(ObjectType_p));
         CallInst *call = CallInst::Create(context.newobjFunction, makeArrayRef(args), "");
         return context.locals()[name] = call;
     }
+
     return new LoadInst(context.locals()[name], "", false, context.currentBlock());
 }
 
 Value* NString::codeGen(CodeGenContext& context)
 {
-    //cout << "Creating string: " << value << endl;
+    LOG(LogLevel::Verbose, "Creating string: " + value);
     Constant *format_const = ConstantDataArray::getString(TheContext, value);
     GlobalVariable *var =
         new GlobalVariable(
@@ -229,11 +232,11 @@ Value* NReference::codeGen(CodeGenContext& context)
 {
     if (refs.size() == 1) {
         NIdentifier *ident = refs.front();
-        //cout << "ı Creating reference: " << ident->name << endl;
+        LOG(LogLevel::Verbose, "Creating reference 1: " + ident->name);
         return ident->codeGen(context);
     }
 
-    //cout << "2 Creating reference" << endl;
+    LOG(LogLevel::Verbose, "Creating reference 2 ");
     return resolveReference(*this, context);
 }
 
@@ -242,7 +245,7 @@ Value* NMethodCall::codeGen(CodeGenContext& context)
     NIdentifier& id = *ref.refs.front();
     Function *function = context.module->getFunction(id.name.c_str());
     if (function == NULL) {
-        cerr << "no such function " << id.name << endl;
+        LOG(LogLevel::Error, "No such function " + id.name);
     }
     vector<Value*> args;
     ExpressionList::const_iterator it;
@@ -250,13 +253,13 @@ Value* NMethodCall::codeGen(CodeGenContext& context)
         args.push_back((**it).codeGen(context));
     }
     CallInst *call = CallInst::Create(function, makeArrayRef(args), "", context.currentBlock());
-    //cout << "Creating method call: " << id.name << endl;
+    LOG(LogLevel::Verbose, "Creating method call: " + id.name);
     return call;
 }
 
 Value* NBinaryOperator::codeGen(CodeGenContext& context)
 {
-    //cout << "Creating binary operation " << op << endl;
+    LOG(LogLevel::Verbose, "Creating binary operation " + to_string(op));
     Instruction::BinaryOps instr;
     switch (op) {
         case TPLUS:     instr = Instruction::Add; goto math;
@@ -275,12 +278,12 @@ math:
 
 Value* NAssignment::codeGen(CodeGenContext& context)
 {
-    //cout << "Creating assignment " << endl;
+    LOG(LogLevel::Debug, "Creating assignment");
     if (lhs.refs.size() == 1) {
-        //cout << "IF" << endl;
+        LOG(LogLevel::Verbose, "Assignment refs.size == 1");
         return new StoreInst(rhs.codeGen(context), context.locals()[lhs.refs.front()->name], false, context.currentBlock());
     } else {
-        //cout << "ELSE" << endl;
+        LOG(LogLevel::Verbose, "Assignment refs.size != 1");
         Value *value = resolveReference(lhs, context, true);
         Value *sym = getStringConstant(lhs.refs.back()->name, context);
 
@@ -299,22 +302,23 @@ Value* NBlock::codeGen(CodeGenContext& context)
     StatementList::const_iterator it;
     Value *last = NULL;
     for (it = statements.begin(); it != statements.end(); it++) {
-        //cout << "Generating code for block " << typeid(**it).name() << endl;
+        LOG(LogLevel::Verbose, "Generating code for block " + string(typeid(**it).name()));
         last = (**it).codeGen(context);
     }
-    //cout << "Creating block" << endl;
+
+    LOG(LogLevel::Verbose, "Creating block");
     return last;
 }
 
 Value* NExpressionStatement::codeGen(CodeGenContext& context)
 {
-    //cout << "Generating code for expression " << typeid(expression).name() << endl;
+    LOG(LogLevel::Verbose, "Generating code for expression" + string(typeid(expression).name()));
     return expression.codeGen(context);
 }
 
 Value* NReturnStatement::codeGen(CodeGenContext& context)
 {
-    //cout << "Generating return code for " << typeid(expression).name() << endl;
+    LOG(LogLevel::Verbose, "Generating return code for" + string(typeid(expression).name()));
     Value *returnValue = expression.codeGen(context);
     context.setCurrentReturnValue(returnValue);
     return returnValue;
@@ -322,7 +326,7 @@ Value* NReturnStatement::codeGen(CodeGenContext& context)
 
 Value* NVariableDeclaration::codeGen(CodeGenContext& context)
 {
-    //cout << "Creating variable declaration " << type << " " << id.name << endl;
+    LOG(LogLevel::Verbose, "Creating variable declaration " + to_string(type) + " " + id.name);
     AllocaInst *alloc = new AllocaInst(typeOf(type), id.name.c_str(), context.currentBlock());
     context.locals()[id.name] = alloc;
     if (assignmentExpr != NULL) {
@@ -347,7 +351,7 @@ Value* NExternDeclaration::codeGen(CodeGenContext& context)
 
 Value* NFunctionDeclaration::codeGen(CodeGenContext& context)
 {
-    //cout << id.name << endl;
+    LOG(LogLevel::Verbose, id.name);
     vector<Type*> argTypes;
     VariableList::const_iterator it;
     for (it = arguments.begin(); it != arguments.end(); it++) {
@@ -374,6 +378,6 @@ Value* NFunctionDeclaration::codeGen(CodeGenContext& context)
     ReturnInst::Create(TheContext, context.getCurrentReturnValue(), bblock);
 
     context.popBlock();
-    //cout << "Creating function: " << id.name << endl;
+    LOG(LogLevel::Verbose, "Creating function: " + id.name);
     return function;
 }

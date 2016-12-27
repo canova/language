@@ -28,6 +28,7 @@ llvm::Function* createPrintfFunction(CodeGenContext& context)
 
 void createEchoIntegerFunction(CodeGenContext& context, llvm::Function* printfFn)
 {
+    LOG(LogLevel::Verbose, "Creating sayi_yaz function");
     std::vector<llvm::Type*> echo_arg_types;
     echo_arg_types.push_back(llvm::Type::getInt64Ty(TheContext));
 
@@ -74,6 +75,7 @@ void createEchoIntegerFunction(CodeGenContext& context, llvm::Function* printfFn
 
 void createEchoStringFunction(CodeGenContext& context, llvm::Function* printfFn)
 {
+    LOG(LogLevel::Verbose, "Creating yazi_yaz function");
     std::vector<llvm::Type*> echo_arg_types;
     echo_arg_types.push_back(llvm::Type::getInt8PtrTy(TheContext));
 
@@ -119,6 +121,7 @@ void createEchoStringFunction(CodeGenContext& context, llvm::Function* printfFn)
 }
 
 void createCoreFunctions(CodeGenContext& context){
+    LOG(LogLevel::Verbose, "Creating core functions");
     llvm::Function* printfFn = createPrintfFunction(context);
     createEchoIntegerFunction(context, printfFn);
     createEchoStringFunction(context, printfFn);
