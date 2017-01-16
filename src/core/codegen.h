@@ -57,7 +57,7 @@ public:
     Function *addFunction(char *name, FunctionType *ftype, void (^block)(BasicBlock *));
 
     void generateCode(NBlock& root);
-    GenericValue runCode();
+    void runCode();
     std::map<std::string, Value*>& locals() {
         return blocks.top()->locals;
     }

@@ -14,9 +14,8 @@ int main(int argc, char **argv)
 {
     setlocale(LC_ALL, "Turkish");
     yyparse();
-    LOG(LogLevel::Error, "Main function");
+    LOG(LogLevel::Verbose, "Main function");
 
-    // http://comments.gmane.org/gmane.comp.compilers.llvm.devel/33877
     InitializeNativeTarget();
     InitializeNativeTargetAsmPrinter();
     InitializeNativeTargetAsmParser();

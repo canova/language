@@ -114,20 +114,19 @@ void CodeGenContext::generateCode(NBlock& root)
 }
 
 /* Executes the AST by running the main function */
-GenericValue CodeGenContext::runCode() {
+void CodeGenContext::runCode() {
     LOG(LogLevel::Debug, "Running code...");
     string error;
     ExecutionEngine *ee = EngineBuilder(unique_ptr<Module>(module)).setErrorStr(&error).create();
     objalloc = (mObject (*)())ee->getPointerToFunction(objallocFunction);
     ee->finalizeObject();
-    vector<GenericValue> noargs;
-    GenericValue v = ee->runFunction(mainFunction, noargs);
+
+    const vector<string> argList;
+    ee->runFunctionAsMain(mainFunction, argList, 0);
     LOG(LogLevel::Info, "\033[0;32mCode was run.\x1b[0m");
 
     if (error.length() > 0)
         LOG(LogLevel::Error, "Error exist: " + error);
-
-    return v;
 }
 
 /* Returns an LLVM type based on the identifier */
