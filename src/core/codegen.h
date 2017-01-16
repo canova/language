@@ -48,7 +48,7 @@ public:
     Function *newobjFunction;
 
     CodeGenContext() {
-        module = new Module("main", TheContext);
+        module = new Module("main.ll", TheContext);
     }
 
     StructType* addStructType(char *name, size_t numArgs, ...);

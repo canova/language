@@ -12,17 +12,15 @@ static StructType *StringType;
 static PointerType *ObjectType_p;
 static PointerType *StringType_p;
 
-static PointerType *GenericPointerType = PointerType::get(Type::getInt64Ty(TheContext), 0);
-
 mObject (*objalloc)() = NULL;
 
 StructType* CodeGenContext::addStructType(char *name, size_t numArgs, ...)
 {
     LOG(LogLevel::Verbose, "addStructType");
     vector<Type *> fields;
-    StructType *fwdType = StructType::create(TheContext, name);
+    StructType *fwdType = StructType::create(module->getContext(), name);
     fields.push_back(PointerType::getUnqual(fwdType));
-    fields.push_back(Type::getInt64Ty(TheContext));
+    fields.push_back(Type::getInt64Ty(module->getContext()));
 
     va_list list;
     va_start(list, numArgs);
@@ -37,6 +35,7 @@ StructType* CodeGenContext::addStructType(char *name, size_t numArgs, ...)
 
 FunctionType* CodeGenContext::functionType(Type* retType, bool varargs, size_t numArgs, ...)
 {
+    LOG(LogLevel::Verbose, "functionType");
     vector<Type*> args;
     va_list list;
     va_start(list, numArgs);
@@ -50,6 +49,7 @@ FunctionType* CodeGenContext::functionType(Type* retType, bool varargs, size_t n
 
 Function* CodeGenContext::addExternalFunction(char *name, FunctionType *fType)
 {
+    LOG(LogLevel::Verbose, "addExternalFunction");
     Function *f = Function::Create(fType, GlobalValue::ExternalLinkage, name, module);
     f->setCallingConv(CallingConv::C);
     return f;
@@ -57,9 +57,10 @@ Function* CodeGenContext::addExternalFunction(char *name, FunctionType *fType)
 
 Function* CodeGenContext::addFunction(char *name, FunctionType *fType, void (^block)(BasicBlock *))
 {
+    LOG(LogLevel::Verbose, "addFunction");
     Function *f = Function::Create(fType, GlobalValue::InternalLinkage, name, module);
     f->setCallingConv(CallingConv::C);
-    if (block) block(BasicBlock::Create(TheContext, (char *) "entry", f, 0));
+    if (block) block(BasicBlock::Create(module->getContext(), Twine("entry"), f, 0));
     return f;
 }
 
@@ -67,41 +68,42 @@ Function* CodeGenContext::addFunction(char *name, FunctionType *fType, void (^bl
 void CodeGenContext::generateCode(NBlock& root)
 {
     LOG(LogLevel::Debug, "Generating code...");
+    static PointerType *GenericPointerType = PointerType::get(Type::getInt64Ty(module->getContext()), 0);
 
     ObjectType = addStructType((char *) "mObject", 1, GenericPointerType);
     ObjectType_p = PointerType::getUnqual(ObjectType);
-    StringType = addStructType((char *) "string", 3, GenericPointerType, GenericPointerType, Type::getInt64Ty(TheContext));
+    StringType = addStructType((char *) "string", 3, GenericPointerType, GenericPointerType, Type::getInt64Ty(module->getContext()));
     StringType_p = PointerType::getUnqual(StringType);
 
     /* Create objalloc function */
     objallocFunction = addFunction((char *) "objalloc", functionType(ObjectType_p, false, 0), ^(BasicBlock *blk) {
-        Constant* allocsize = ConstantExpr::getSizeOf(Type::getInt64Ty(TheContext));
-        Value* a = CallInst::CreateMalloc(blk, ObjectType,
-                                          Type::getInt64Ty(TheContext),
-                                          allocsize);
-        ReturnInst::Create(TheContext, a, blk); // FIXME: IS MALLOC TRUE?
+        Constant* allocSize = ConstantExpr::getSizeOf(ObjectType);
+        Value* a = CallInst::CreateMalloc(blk, Type::getInt64Ty(module->getContext()),
+                                          ObjectType,
+                                          allocSize);
+        ReturnInst::Create(module->getContext(), a, blk);
     });
 
     /* Create refs to putSlot, getSlot and newobj */
     putSlotFunction = addExternalFunction((char *) "putSlot",
-        functionType(Type::getVoidTy(TheContext), false, 3, ObjectType_p, GenericPointerType, ObjectType_p));
+        functionType(Type::getVoidTy(module->getContext()), false, 3, ObjectType_p, GenericPointerType, ObjectType_p));
     getSlotFunction = addExternalFunction((char *) "getSlot",
-        functionType(ObjectType_p, false, 3, ObjectType_p, GenericPointerType, Type::getInt64Ty(TheContext)));
+        functionType(ObjectType_p, false, 3, ObjectType_p, GenericPointerType, Type::getInt64Ty(module->getContext())));
     newobjFunction = addExternalFunction((char *) "newobj",
         functionType(ObjectType_p, false, 1, ObjectType_p));
 
     /* Create the top level interpreter function to call as entry */
     vector<Type*> argTypes;
-    FunctionType *ftype = FunctionType::get(Type::getVoidTy(TheContext), makeArrayRef(argTypes), false);
-    mainFunction = Function::Create(ftype, GlobalValue::InternalLinkage, "main", module);
-    BasicBlock *bblock = BasicBlock::Create(TheContext, "entry", mainFunction, 0);
+    FunctionType *ftype = FunctionType::get(Type::getVoidTy(module->getContext()), makeArrayRef(argTypes), false);
+    mainFunction = Function::Create(ftype, GlobalValue::ExternalLinkage, "main", module);
+    BasicBlock *bblock = BasicBlock::Create(module->getContext(), "entry", mainFunction, 0);
 
     /* Push a new variable/block context */
     pushBlock(bblock);
     cObject = new GlobalVariable(*module, ObjectType, true,
-        GlobalValue::InternalLinkage, 0, "class.Object");
+        GlobalValue::ExternalLinkage, 0, "class.Object");
     root.codeGen(*this); /* emit bytecode for the toplevel block */
-    ReturnInst::Create(TheContext, bblock);
+    ReturnInst::Create(module->getContext(), bblock);
     popBlock();
 
     /* Print the bytecode in a human-readable format
@@ -109,7 +111,7 @@ void CodeGenContext::generateCode(NBlock& root)
        Comment these lines after debugging.
      */
     LOG(LogLevel::Debug, "Code is generated.");
-    //module->dump();
+    module->dump();
     LOG(LogLevel::Verbose, "Dump ends.");
 }
 
@@ -130,32 +132,32 @@ void CodeGenContext::runCode() {
 }
 
 /* Returns an LLVM type based on the identifier */
-static Type *typeOf(const VariableType type)
+static Type *typeOf(const VariableType type, CodeGenContext& context)
 {
     switch(type) {
         case VariableType::Integer:
-            return Type::getInt64Ty(TheContext);
+            return Type::getInt64Ty(context.module->getContext());
         case VariableType::Double:
-            return Type::getDoubleTy(TheContext);
+            return Type::getDoubleTy(context.module->getContext());
         case VariableType::String:
         case VariableType::Object:
-            return ObjectType_p;
+            //return ObjectType_p;
         default:
-            return Type::getVoidTy(TheContext);
+            return Type::getVoidTy(context.module->getContext());
     }
 }
 
 static Value* getStringConstant(const string& str, CodeGenContext& context)
 {
     LOG(LogLevel::Verbose, "getStringConstant str: " + str);
-    Constant *n = ConstantDataArray::getString(TheContext, str.c_str(), true);
+    Constant *n = ConstantDataArray::getString(context.module->getContext(), str.c_str(), true);
     GlobalVariable *g = new GlobalVariable(*context.module, n->getType(), true,
         GlobalValue::InternalLinkage, 0, str.c_str());
     g->setInitializer(n);
     vector<Constant*> ptr;
-    ptr.push_back(ConstantInt::get(Type::getInt64Ty(TheContext), 0));
-    ptr.push_back(ConstantInt::get(Type::getInt64Ty(TheContext), 0));
-    return ConstantExpr::getGetElementPtr(StringType_p, g, ptr[0], ptr.size());
+    ptr.push_back(ConstantInt::get(Type::getInt64Ty(context.module->getContext()), 0));
+    ptr.push_back(ConstantInt::get(Type::getInt64Ty(context.module->getContext()), 0));
+    return ConstantExpr::getGetElementPtr(PointerType::get(Type::getInt64Ty(context.module->getContext()), 0), g, ptr[0], ptr.size());
 }
 
 static Value* resolveReference(NReference& ref, CodeGenContext& context, bool ignoreLast = false)
@@ -172,7 +174,7 @@ static Value* resolveReference(NReference& ref, CodeGenContext& context, bool ig
         vector<Value*> params;
         params.push_back(curValue);
         params.push_back(ch);
-        params.push_back(ConstantInt::get(Type::getInt64Ty(TheContext), 1));
+        params.push_back(ConstantInt::get(Type::getInt64Ty(context.module->getContext()), 1));
         LOG(LogLevel::Verbose, "About to call " + string(typeid(curValue).name()) + "::" + typeid(ch).name());
         CallInst *call = CallInst::Create(context.getSlotFunction, makeArrayRef(params), "");
         call->setCallingConv(CallingConv::C);
@@ -186,19 +188,20 @@ static Value* resolveReference(NReference& ref, CodeGenContext& context, bool ig
 Value* NInteger::codeGen(CodeGenContext& context)
 {
     LOG(LogLevel::Verbose, "Creating integer: " + to_string(value));
-    return ConstantInt::get(Type::getInt64Ty(TheContext), value, true);
+    return ConstantInt::get(Type::getInt64Ty(context.module->getContext()), value, true);
 }
 
 Value* NDouble::codeGen(CodeGenContext& context)
 {
     LOG(LogLevel::Verbose, "Creating double: " + to_string(value));
-    return ConstantFP::get(Type::getDoubleTy(TheContext), value);
+    return ConstantFP::get(Type::getDoubleTy(context.module->getContext()), value);
 }
 
 Value* NIdentifier::codeGen(CodeGenContext& context)
 {
     LOG(LogLevel::Verbose, "Creating identifier: " + name);
     if (name.compare("null") == 0) {
+        LOG(LogLevel::Verbose, "IDENTIFIER 1");
         return ConstantPointerNull::get(ObjectType_p);
     }
 
@@ -216,10 +219,10 @@ Value* NIdentifier::codeGen(CodeGenContext& context)
 Value* NString::codeGen(CodeGenContext& context)
 {
     LOG(LogLevel::Verbose, "Creating string: " + value);
-    Constant *format_const = ConstantDataArray::getString(TheContext, value);
+    Constant *format_const = ConstantDataArray::getString(context.module->getContext(), value);
     GlobalVariable *var =
         new GlobalVariable(
-            *context.module, ArrayType::get(IntegerType::get(TheContext, 8), value.length() + 1),
+            *context.module, ArrayType::get(IntegerType::get(context.module->getContext(), 8), value.length() + 1),
             true, GlobalValue::PrivateLinkage, format_const, ".str");
     // Old NString codegen
     //args.push_back(ConstantPointerNull::get(ObjectType_p));
@@ -242,6 +245,7 @@ Value* NReference::codeGen(CodeGenContext& context)
 Value* NMethodCall::codeGen(CodeGenContext& context)
 {
     NIdentifier& id = *ref.refs.front();
+    LOG(LogLevel::Verbose, "Creating method call for: " + id.name);
     Function *function = context.module->getFunction(id.name.c_str());
     if (function == NULL) {
         LOG(LogLevel::Error, "No such function " + id.name);
@@ -251,8 +255,8 @@ Value* NMethodCall::codeGen(CodeGenContext& context)
     for (it = arguments.begin(); it != arguments.end(); it++) {
         args.push_back((**it).codeGen(context));
     }
-    CallInst *call = CallInst::Create(function, makeArrayRef(args), "", context.currentBlock());
-    LOG(LogLevel::Verbose, "Creating method call: " + id.name);
+
+    CallInst *call = CallInst::Create(function, args, "", context.currentBlock());
     return call;
 }
 
@@ -326,7 +330,7 @@ Value* NReturnStatement::codeGen(CodeGenContext& context)
 Value* NVariableDeclaration::codeGen(CodeGenContext& context)
 {
     LOG(LogLevel::Verbose, "Creating variable declaration " + to_string(type) + " " + id.name);
-    AllocaInst *alloc = new AllocaInst(typeOf(type), id.name.c_str(), context.currentBlock());
+    AllocaInst *alloc = new AllocaInst(typeOf(type, context), id.name.c_str(), context.currentBlock());
     context.locals()[id.name] = alloc;
     if (assignmentExpr != NULL) {
         NReference ref(id);
@@ -341,9 +345,9 @@ Value* NExternDeclaration::codeGen(CodeGenContext& context)
     vector<Type*> argTypes;
     VariableList::const_iterator it;
     for (it = arguments.begin(); it != arguments.end(); it++) {
-        argTypes.push_back(typeOf((**it).type));
+        argTypes.push_back(typeOf((**it).type, context));
     }
-    FunctionType *ftype = FunctionType::get(typeOf(type), makeArrayRef(argTypes), false);
+    FunctionType *ftype = FunctionType::get(typeOf(type, context), makeArrayRef(argTypes), false);
     Function *function = Function::Create(ftype, GlobalValue::ExternalLinkage, id.name.c_str(), context.module);
     return function;
 }
@@ -354,11 +358,11 @@ Value* NFunctionDeclaration::codeGen(CodeGenContext& context)
     vector<Type*> argTypes;
     VariableList::const_iterator it;
     for (it = arguments.begin(); it != arguments.end(); it++) {
-        argTypes.push_back(typeOf((**it).type));
+        argTypes.push_back(typeOf((**it).type, context));
     }
-    FunctionType *ftype = FunctionType::get(typeOf(type), makeArrayRef(argTypes), false);
+    FunctionType *ftype = FunctionType::get(typeOf(type, context), makeArrayRef(argTypes), false);
     Function *function = Function::Create(ftype, GlobalValue::InternalLinkage, id.name.c_str(), context.module);
-    BasicBlock *bblock = BasicBlock::Create(TheContext, "entry", function, 0);
+    BasicBlock *bblock = BasicBlock::Create(context.module->getContext(), "entry", function, 0);
 
     context.pushBlock(bblock);
 
@@ -374,7 +378,7 @@ Value* NFunctionDeclaration::codeGen(CodeGenContext& context)
     }
 
     block.codeGen(context);
-    ReturnInst::Create(TheContext, context.getCurrentReturnValue(), bblock);
+    ReturnInst::Create(context.module->getContext(), context.getCurrentReturnValue(), bblock);
 
     context.popBlock();
     LOG(LogLevel::Verbose, "Creating function: " + id.name);

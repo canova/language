@@ -111,6 +111,7 @@ func_decl_args : /*blank*/  { $$ = new VariableList(); }
 
 ref : ident { $$ = new NReference(); $$->refs.push_back($1); }
     | ref TDOT ident { $1->refs.push_back($3); }
+    ;
 
 ident : TIDENTIFIER { $$ = new NIdentifier(*$1); delete $1; }
       ;
