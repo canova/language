@@ -12,7 +12,7 @@ static StructType *StringType;
 static PointerType *ObjectType_p;
 static PointerType *StringType_p;
 
-mObject (*objalloc)() = NULL;
+//mObject (*objalloc)() = NULL;
 
 StructType* CodeGenContext::addStructType(char *name, size_t numArgs, ...)
 {
@@ -75,14 +75,15 @@ void CodeGenContext::generateCode(NBlock& root)
     StringType = addStructType((char *) "string", 3, GenericPointerType, GenericPointerType, Type::getInt64Ty(module->getContext()));
     StringType_p = PointerType::getUnqual(StringType);
 
+    // TODO: Make use of objallocFunction
     /* Create objalloc function */
-    objallocFunction = addFunction((char *) "objalloc", functionType(ObjectType_p, false, 0), ^(BasicBlock *blk) {
-        Constant* allocSize = ConstantExpr::getSizeOf(ObjectType);
-        Value* a = CallInst::CreateMalloc(blk, Type::getInt64Ty(module->getContext()),
-                                          ObjectType,
-                                          allocSize);
-        ReturnInst::Create(module->getContext(), a, blk);
-    });
+    //objallocFunction = addFunction((char *) "objalloc", functionType(ObjectType_p, false, 0), ^(BasicBlock *blk) {
+    //    Constant* allocSize = ConstantExpr::getSizeOf(ObjectType);
+    //    Value* a = CallInst::CreateMalloc(blk, Type::getInt64Ty(module->getContext()),
+    //                                      ObjectType,
+    //                                      allocSize);
+    //    ReturnInst::Create(module->getContext(), a, blk);
+    //});
 
     /* Create refs to putSlot, getSlot and newobj */
     putSlotFunction = addExternalFunction((char *) "putSlot",
@@ -120,7 +121,8 @@ void CodeGenContext::runCode() {
     LOG(LogLevel::Debug, "Running code...");
     string error;
     ExecutionEngine *ee = EngineBuilder(unique_ptr<Module>(module)).setErrorStr(&error).create();
-    objalloc = (mObject (*)())ee->getPointerToFunction(objallocFunction);
+    // TODO: Make use of objalloc
+    //objalloc = (mObject (*)())ee->getPointerToFunction(objallocFunction);
     ee->finalizeObject();
 
     const vector<string> argList;
@@ -141,7 +143,7 @@ static Type *typeOf(const VariableType type, CodeGenContext& context)
             return Type::getDoubleTy(context.module->getContext());
         case VariableType::String:
         case VariableType::Object:
-            //return ObjectType_p;
+            return ObjectType_p;
         default:
             return Type::getVoidTy(context.module->getContext());
     }
