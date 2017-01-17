@@ -45,7 +45,7 @@ int yycolumn = 1;
 "yok"                           return TOKEN(TVOID);
 "sayı"                          return TOKEN(TINTEGERKEY);
 "ondalıklı"                     return TOKEN(TDOUBLEKEY);
-"string"                        return TOKEN(TSTRINGKEY);
+"yazı"                        return TOKEN(TSTRINGKEY);
 "nesne"                         return TOKEN(TOBJECTKEY);
 [a-zA-Z_][a-zA-Z0-9_]*          SAVE_TOKEN; return TIDENTIFIER;
 [0-9]+\.[0-9]*                  SAVE_TOKEN; return TDOUBLE;
