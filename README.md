@@ -9,4 +9,4 @@ A Programming Language in Turkish to Encourage More Turkish Speaking People to P
 
 ### Build
 - Enter the project directory with terminal.
-- Run `make compile`. This will give you a binary program with name "compiler". Or if you want to test it directly you can run `make test`. This will get example.txt file's content from your project's root directory and compile it with generated compiler.
+- Run `make compile`. This will give you a binary program with name "compiler". Or if you want to test it directly you can run `make test`. This will get the file named example.program from your project's root directory and compile it with generated compiler.
