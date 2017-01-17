@@ -52,15 +52,15 @@ private:
             case LogLevel::Disabled:
                 return "DISABLED";
             case LogLevel::Error:
-                return "ERROR";
+                return "\x1b[31mERROR\033[0m";
             case LogLevel::Warning:
-                return "WARNING";
+                return "\x1b[33mWARNING\033[0m";
             case LogLevel::Info:
-                return "INFO";
+                return "\033[0;32mINFO\033[0m";
             case LogLevel::Debug:
-                return "DEBUG";
+                return "\033[0;32mDEBUG\033[0m";
             case LogLevel::Verbose:
-                return "VERBOSE";
+                return "\033[0;32mVERBOSE\033[0m";
         }
     }
 };
