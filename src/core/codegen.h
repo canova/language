@@ -51,13 +51,14 @@ public:
         module = new Module("main.ll", TheContext);
     }
 
-    StructType* addStructType(char *name, size_t numArgs, ...);
-    FunctionType* functionType(Type* retType, bool varargs, size_t numArgs, ...);
-    Function* addExternalFunction(char *name, FunctionType *ftype);
+    StructType *addStructType(char *name, size_t numArgs, ...);
+    FunctionType *functionType(Type* retType, bool varargs, size_t numArgs, ...);
+    Function *addExternalFunction(char *name, FunctionType *ftype);
     Function *addFunction(char *name, FunctionType *ftype, void (^block)(BasicBlock *));
 
     void generateCode(NBlock& root);
     void runCode();
+
     std::map<std::string, Value*>& locals() {
         return blocks.top()->locals;
     }
@@ -82,7 +83,7 @@ public:
         blocks.top()->returnValue = value;
     }
 
-    Value* getCurrentReturnValue() {
+    Value *getCurrentReturnValue() {
         return blocks.top()->returnValue;
     }
 };
